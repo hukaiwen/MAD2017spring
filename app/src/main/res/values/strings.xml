@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">KaiwenHu</string>
+    <string name="long_app_name">HelloMAD_KaiwenHu</string>
+    <string name="generate_crash_label">Generate Error</string>
+    <string name="about_label">About</string>
+    <string name="about_title">About Author</string>
+    <string name="ok_label">OK</string>
+</resources>
