@@ -12,15 +12,22 @@ import android.telephony.TelephonyManager;
 import android.widget.TextView;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
+import 	android.content.pm.PackageManager;
+import android.support.v4.content.ContextCompat;
+import android.support.v4.app.ActivityCompat;
+import android.Manifest;
+import android.util.Log;
 import android.app.Activity;
-
 
 
 
 public class MainFragment extends Fragment {
     private AlertDialog mDialog;
-    private TextView mImeiView;
     private Context context;
+    private StringBuffer IMEIb = new StringBuffer();
+    private String IMEI = "";
+
+    private static final int REQUEST_READ_PHONE_STATE = 110;
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -28,26 +35,58 @@ public class MainFragment extends Fragment {
         // Handle buttons here...
         context = this.getActivity();
 
-        TextView tv = rootView.findViewById(R.id.ver_name);
-        tv.setText("foo");
 
-        //setVersionName();
+        setVersionName(rootView);
+        setVersionCode(rootView);
 
+        //Set IMEI
+//        setIMEI(rootView,(Activity)context);
+
+        if (ContextCompat.checkSelfPermission(this.getActivity(),
+                Manifest.permission.READ_PHONE_STATE)
+                != PackageManager.PERMISSION_GRANTED) {
+
+                // No explanation needed, we can request the permission.
+
+                ActivityCompat.requestPermissions(this.getActivity(),
+                        new String[]{Manifest.permission.READ_PHONE_STATE},
+                        REQUEST_READ_PHONE_STATE);
+
+                // MY_PERMISSIONS_REQUEST_READ_PHONE_STATE is an
+                // app-defined int constant. The callback method gets the
+                // result of the request.
+
+        }else{
+            //If permission already got, just get it
+            TelephonyManager tm = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+            IMEI= tm.getDeviceId();
+        }
+
+
+
+        //setting up button.
         View aboutButton = rootView.findViewById(R.id.about_button);
         aboutButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick (View view) {
-
-//                TextView imeiView = view.findViewById(R.id.imei_textView);
-//                TelephonyManager tm = (TelephonyManager)context.getSystemService(Context.TELEPHONY_SERVICE);
-//                imeiView.setText("IMEI: "+tm.getDeviceId());
-
                 AlertDialog.Builder builder =
                         new AlertDialog.Builder(getActivity());
                 builder.setTitle(R.string.about_title);
 
+                //here I just create a vew.
                 LayoutInflater inflater = (LayoutInflater)context.getSystemService (Context.LAYOUT_INFLATER_SERVICE);
                 View v = inflater.inflate(R.layout.about, null);
+
+                //This is for getting imei
+                TextView imeiView = v.findViewById(R.id.imei_textView);
+                //I used stringbuffer to get the IMEI when First time getting permission in onRequestPerssionsResult
+                if (IMEIb.length()>0) {
+                    IMEI = IMEIb.toString();
+                }
+
+                imeiView.setText("IMEI: "+IMEI);
+
+
                 builder.setView(v);
 
                 builder.setCancelable(false);
@@ -63,6 +102,7 @@ public class MainFragment extends Fragment {
             }
         });
 
+        //to generate an arithmetic error.
         View errorButton = rootView.findViewById(R.id.error_button);
         errorButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -82,7 +122,8 @@ public class MainFragment extends Fragment {
             mDialog.dismiss();
     }
 
-    private void setVersionName() {
+    //Setting version name
+    private void setVersionName(View v) {
         String versionName = "Version: ";
         PackageInfo packageInfo;
         try {
@@ -97,9 +138,55 @@ public class MainFragment extends Fragment {
             versionName += "Unknown";
         }
 
-        context = this.getActivity();
-        View rootView = ((Activity)context).getWindow().getDecorView().findViewById(android.R.id.content);
-        TextView tv = rootView.findViewById(R.id.ver_name);
+        TextView tv = v.findViewById(R.id.ver_name);
         tv.setText(versionName);
+    }
+
+    //Setting version code
+    private void setVersionCode(View v) {
+        String versionCode = "Version: ";
+        PackageInfo packageInfo;
+        try {
+            packageInfo = context.getApplicationContext()
+                    .getPackageManager()
+                    .getPackageInfo(
+                            context.getApplicationContext().getPackageName(),
+                            0
+                    );
+            versionCode += packageInfo.versionCode;
+        } catch (NameNotFoundException e) {
+            versionCode += "Unknown";
+        }
+
+        TextView tv = v.findViewById(R.id.ver_number);
+        tv.setText(versionCode);
+    }
+
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case REQUEST_READ_PHONE_STATE: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                    // permission was granted, yay! Do the
+                    // contacts-related task you need to do.
+                    TelephonyManager tm = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+                    StringBuffer temp = new StringBuffer(tm.getDeviceId());
+                    IMEIb.append(temp);
+                } else {
+
+                    // permission denied, boo! Disable the
+                    // functionality that depends on this permission.
+                }
+                return;
+            }
+
+            // other 'case' lines to check for other
+            // permissions this app might request
+        }
     }
 }
